@@ -15,11 +15,15 @@ App = {
       App.web3Provider = new Web3.providers.HttpProvider('http://localhost:8545');
       web3 = new Web3(App.web3Provider);
     }
+    window.ethereum.enable().then(accounts => {
+      App.account = accounts[0]
+    })
+
     return App.initContract();
   },
 
   initContract: async function () {
-    const election = await(await fetch('Election.json')).text()
+    const election = await (await fetch('Election.json')).text()
     App.contracts.Election = TruffleContract(JSON.parse(election))
     App.contracts.Election.setProvider(App.web3Provider)
     App.election = await App.contracts.Election.deployed()
@@ -37,7 +41,7 @@ App = {
       var candidatesRow = document.getElementById('candidatesRow')
       var candidateTemplate = document.getElementById('candidateTemplate')
 
-      for (var i = 0; i < candidateCounts; i++) {
+      for (var i = 1; i <= candidateCounts; i++) {
         electionInstance.candidates(i).then(function (candidate) {
           var id = candidate[0];
           var name = candidate[1];
@@ -50,13 +54,31 @@ App = {
           fields[1].innerHTML = id
           fields[2].innerHTML = name
           fields[3].innerHTML = votes
-          console.log(cndTmplt)
+          fields[4].setAttribute("data-id", id);
 
-          cndTmplt.style.display="block"
+          cndTmplt.style.display = "block"
 
           candidatesRow.append(cndTmplt);
         })
       }
+      return electionInstance.voters(App.accout);
+    }).then(function (hasVoted) {
+      if (hasVoted) {
+        let btn = cndTmplt.querySelectorAll(".btn-vote")
+        btn[0].style.display = "none"
+      }
+    })
+  },
+
+  vote: async function (e) {
+    var candId = Number(e.target.dataset['id'])
+    App.contracts.Election.deployed().then(function (instance) {
+      return instance.giveVote(candId, { from: App.account });
+    }).then(function (res) {
+      console.log(res)
+      window.location.reload()
+    }).catch(function (err) {
+      console.log(err)
     })
   }
 };

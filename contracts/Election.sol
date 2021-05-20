@@ -8,6 +8,7 @@ contract Election{
         uint voteCount;
     }
     
+    mapping (address => bool) public voters;
     mapping (uint => Candidate) public candidates;
     uint public candidateCounts;
     
@@ -17,8 +18,8 @@ contract Election{
     }
     
     function addCandidate(string memory _name) public {
-        candidates[candidateCounts] = Candidate(candidateCounts, _name, 0);
         candidateCounts++;
+        candidates[candidateCounts] = Candidate(candidateCounts, _name, 0);
     }
     
     function getCandidate(uint _id) view public returns (uint, string memory, uint){
@@ -26,8 +27,9 @@ contract Election{
     }
     
     function giveVote(uint _id) public {
-        uint vt = candidates[_id].voteCount;
-        vt += 1;
-        candidates[_id].voteCount = vt;
+        require(!voters[msg.sender]);
+        require(_id > 0 && _id <= candidateCounts);
+        voters[msg.sender] = true;
+        candidates[_id].voteCount++;
     }
 }
